@@ -28,6 +28,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
+import logger from '../utils/Logger.js';
 import PccsError from '../utils/PccsError.js';
 import PccsStatus from '../constants/pccs_status_code.js';
 import Constants from '../constants/index.js';
@@ -110,14 +111,30 @@ export async function pckCertSelection(
 export async function getPckCert(qeid, cpusvn, pcesvn, pceid, enc_ppid) {
   let pckcert = null;
 
+  logger.debug("=== getPckCert() CALLED ===");
+  logger.debug(`qeid     = ${qeid}`);
+  logger.debug(`cpusvn   = ${cpusvn}`);
+  logger.debug(`pcesvn   = ${pcesvn}`);
+  logger.debug(`pceid    = ${pceid}`);
+  logger.debug(`enc_ppid = ${enc_ppid}`);
+
+  logger.debug("Querying platformsDao.getPlatform...");
   const platform = await platformsDao.getPlatform(qeid, pceid);
+  logger.debug("platform result:", platform);
+
   if (platform != null) {
-    // query pck cert from cache DB
+    logger.debug("Platform FOUND → querying pckcertDao.getCert");
     pckcert = await pckcertDao.getCert(qeid, cpusvn, pcesvn, pceid);
+    logger.debug("pckcert result from DB:", pckcert);
+  } else {
+    logger.debug("Platform NOT found → will treat as uncached");
   }
 
   let result = {};
+
   if (pckcert == null) {
+
+    logger.debug("No pckcert found in cache DB.");
     if (platform == null) {
       result = await cachingModeManager.getPckCertFromPCS(
         qeid,
